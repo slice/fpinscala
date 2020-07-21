@@ -185,6 +185,30 @@ trait ListExercises {
         Cons(f(h, h2), zipWith(t, t2)(f))
       case _ => Nil
     }
+
+  // Exercise 3.24
+  def hasSubsequence[A](haystack: List[A], needle: List[A]): Boolean = {
+    @scala.annotation.tailrec
+    def sequenceMatches(haystack: List[A], needle: List[A]): Boolean =
+      (haystack, needle) match {
+        case (Cons(h, _), Cons(h2, Nil)) if h == h2 => true
+        case (Cons(h, t: Cons[A]), Cons(h2, t2: Cons[A])) if h == h2 =>
+          sequenceMatches(t, t2)
+        case _ => false
+      }
+
+    val Cons(nh, _) = needle
+
+    @scala.annotation.tailrec
+    def scan(as: List[A]): Boolean =
+      as match {
+        case Cons(h, t) =>
+          if (h == nh && sequenceMatches(as, needle)) true
+          else scan(t)
+        case _ => false
+      }
+    scan(haystack)
+  }
 }
 
 object List extends ProvidedList with ListExercises
@@ -237,4 +261,6 @@ object Program extends App {
   t(List.filter2(three)(_ == 2), List(2))
   t(List.addCorresponding(three, three), List(2, 4, 6))
   t(List.zipWith(three, three)(_ + _), List.addCorresponding(three, three))
+  t(List.hasSubsequence(three, List(2, 3)), true)
+  t(List.hasSubsequence(List(1, 2, 3, 4, 5, 6, 5, 4), List(5, 6, 5)), true)
 }
