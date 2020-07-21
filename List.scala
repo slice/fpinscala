@@ -100,6 +100,20 @@ trait ListExercises {
     foldLeft(ds, 1.0)(_ * _)
   def length2[A](as: List[A]): Int =
     foldLeft(as, 0)((acc, _) => acc + 1)
+
+  // Exercise 3.12
+  def reverse[A](as: List[A]): List[A] = {
+    @scala.annotation.tailrec
+    def go(as: List[A], acc: List[A]): List[A] = {
+      as match {
+        case Nil => acc
+        case Cons(h, t) => go(t, Cons(h, acc))
+      }
+    }
+    go(as, Nil)
+  }
+  def reverse2[A](as: List[A]): List[A] =
+    foldLeft(as, Nil: List[A])((acc, elem) => Cons(elem, acc))
 }
 
 object List extends ProvidedList with ListExercises
@@ -137,4 +151,6 @@ object Program extends App {
   t(List.sum3(three), 6)
   t(List.product3(threeD), 6)
   t(List.length2(three), 3)
+  t(List.reverse(three), List(3, 2, 1))
+  t(List.reverse2(three), List(3, 2, 1))
 }
