@@ -17,6 +17,13 @@ trait ProvidedList {
   def apply[A](as: A*): List[A] =
     if (as.isEmpty) Nil
     else Cons(as.head, apply(as.tail: _*))
+
+  // p. 36
+  def append[A](a1: List[A], a2: List[A]): List[A] =
+    a1 match {
+      case Nil => a2
+      case Cons(h, t) => Cons(h, append(t, a2))
+    }
 }
 
 trait ListExercises {
@@ -33,6 +40,29 @@ trait ListExercises {
       case Cons(_, as) => Cons(a, as)
       case Nil => List(a)
     }
+
+  // Exercise 3.4
+  def drop[A](as: List[A], n: Int): List[A] =
+    if (n == 0) as
+    else drop(tail(as), n - 1)
+
+  // Exercise 3.5
+  def dropWhile[A](as: List[A], f: A => Boolean): List[A] =
+    as match {
+      case Cons(h, t) if f(h) => dropWhile(t, f)
+      case as => as
+    }
+
+  // Exercise 3.6
+  def init[A](as: List[A]): List[A] = {
+    def go(acc: List[A], cur: List[A]): List[A] =
+      cur match {
+        case Cons(h, t: Cons[A]) => go(List.append(acc, List(h)), t)
+        case Cons(h, Nil) => acc
+        case Nil => ???
+      }
+    go(Nil, as)
+  }
 }
 
 object List extends ProvidedList with ListExercises
@@ -49,6 +79,20 @@ object Program extends App {
 
   val three = List(1, 2, 3)
 
-  assert(List.tail(three) == List(2, 3))
-  assert(List.setHead(three, 2) == List(2, 2, 3))
+  def t[A](left: A, right: A): Unit = {
+    if (left == right) {
+      return
+    }
+
+    import scala.io.{AnsiColor => Color}
+    val message = s"failed: expected $right, got $left"
+    Console.err.println(s"${Color.RED}$message${Color.RESET}")
+  }
+
+  t(List.tail(three), List(2, 3))
+  t(List.setHead(three, 2), List(2, 2, 3))
+  t(List.drop(three, 1), List.tail(three))
+  t(List.drop(three, 2), List(3))
+  t(List.dropWhile(three, (x: Int) => x < 3), List(3))
+  t(List.init(three), List(1, 2))
 }
