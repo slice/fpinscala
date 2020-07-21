@@ -47,9 +47,9 @@ trait ListExercises {
     else drop(tail(as), n - 1)
 
   // Exercise 3.5
-  def dropWhile[A](as: List[A], f: A => Boolean): List[A] =
+  def dropWhile[A](as: List[A])(f: A => Boolean): List[A] =
     as match {
-      case Cons(h, t) if f(h) => dropWhile(t, f)
+      case Cons(h, t) if f(h) => dropWhile(t)(f)
       case as => as
     }
 
@@ -93,6 +93,6 @@ object Program extends App {
   t(List.setHead(three, 2), List(2, 2, 3))
   t(List.drop(three, 1), List.tail(three))
   t(List.drop(three, 2), List(3))
-  t(List.dropWhile(three, (x: Int) => x < 3), List(3))
+  t(List.dropWhile(three)(_ < 3), List(3))
   t(List.init(three), List(1, 2))
 }
