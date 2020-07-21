@@ -157,6 +157,7 @@ object Program extends App {
     import scala.io.{AnsiColor => Color}
     val message = s"failed: expected $right, got $left"
     Console.err.println(s"${Color.RED}$message${Color.RESET}")
+    System.exit(1)
   }
 
   t(List.tail(three), List(2, 3))
