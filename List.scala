@@ -132,6 +132,59 @@ trait ListExercises {
   // actually, let's try using a fold...
   def flatten2[A](as: List[List[A]]): List[A] =
     foldLeft(as, Nil: List[A])((acc, elem) => List.append(elem, acc))
+
+  // Exercise 3.16
+  def add1(is: List[Int]): List[Int] =
+    List.foldRight(is, Nil: List[Int])((elem, acc) => Cons(elem + 1, acc))
+
+  // Exercise 3.17
+  def doublesToString(ds: List[Double]): List[String] =
+    List.foldRight(ds, Nil: List[String])((elem, acc) => Cons(elem.toString, acc))
+
+  // Exercise 3.18
+  def map[A, B](as: List[A])(f: A => B): List[B] =
+    List.foldRight(as, Nil: List[B])((elem, acc) => Cons(f(elem), acc))
+  // probably not great because `List.foldRight` isn't stack-safe, so let's...
+  def map2[A, B](as: List[A])(f: A => B): List[B] =
+    as match {
+      case Cons(h, t) => Cons(f(h), map(t)(f))
+      case Nil => Nil
+    }
+
+  // Exercise 3.19
+  def filter[A](as: List[A])(f: A => Boolean): List[A] =
+    as match {
+      case Cons(h, t) =>
+        if (f(h)) Cons(h, filter(t)(f))
+        else filter(t)(f)
+      case Nil => Nil
+    }
+
+  // Exercise 3.20
+  def flatMap[A, B](as: List[A])(f: A => List[B]): List[B] =
+    as match {
+      case Cons(h, t) => List.append(f(h), flatMap(t)(f))
+      case Nil => Nil
+    }
+
+  // Exercise 3.21
+  def filter2[A](as: List[A])(f: A => Boolean): List[A] =
+    flatMap(as)(elem => if (f(elem)) List(elem) else List())
+
+  // Exercise 3.22
+  def addCorresponding(is1: List[Int], is2: List[Int]): List[Int] =
+    (is1, is2) match {
+      case (Cons(h, t), Cons(h2, t2)) => Cons(h + h2, addCorresponding(t, t2))
+      case _ => Nil
+    }
+
+  // Exercise 3.23
+  def zipWith[A, B, C](as: List[A], bs: List[B])(f: (A, B) => C): List[C] =
+    (as, bs) match {
+      case (Cons(h, t), Cons(h2, t2)) =>
+        Cons(f(h, h2), zipWith(t, t2)(f))
+      case _ => Nil
+    }
 }
 
 object List extends ProvidedList with ListExercises
@@ -175,4 +228,13 @@ object Program extends App {
   t(List.append2(three, three), List(1, 2, 3, 1, 2, 3))
   t(List.flatten(List(three, three, three)), List(1, 2, 3, 1, 2, 3, 1, 2, 3))
   t(List.flatten2(List(three, three, three)), List(1, 2, 3, 1, 2, 3, 1, 2, 3))
+  t(List.add1(three), List(2, 3, 4))
+  t(List.doublesToString(threeD), List("1.0", "2.0", "3.0"))
+  t(List.map(three)(_ + 1), List(2, 3, 4))
+  t(List.map2(three)(_ + 1), List(2, 3, 4))
+  t(List.filter(three)(_ == 2), List(2))
+  t(List.flatMap(three)(n => List(n, n)), List(1, 1, 2, 2, 3, 3))
+  t(List.filter2(three)(_ == 2), List(2))
+  t(List.addCorresponding(three, three), List(2, 4, 6))
+  t(List.zipWith(three, three)(_ + _), List.addCorresponding(three, three))
 }
