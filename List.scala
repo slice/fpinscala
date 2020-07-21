@@ -24,6 +24,19 @@ trait ProvidedList {
       case Nil => a2
       case Cons(h, t) => Cons(h, append(t, a2))
     }
+
+  // p. 39
+  def foldRight[A, B](as: List[A], z: B)(f: (A, B) => B): B =
+    as match {
+      case Nil => z
+      case Cons(x, xs) => f(x, foldRight(xs, z)(f))
+    }
+
+  def sum2(ns: List[Int]): Int =
+    foldRight(ns, 0)(_ + _)
+
+  def product2(ns: List[Double]): Double =
+    foldRight(ns, 1.0)(_ * _)
 }
 
 trait ListExercises {
@@ -63,6 +76,30 @@ trait ListExercises {
       }
     go(Nil, as)
   }
+
+  // Exercise 3.9
+  def length[A](as: List[A]): Int =
+    List.foldRight(as, 0)((_, acc) => acc + 1)
+
+  // Exercise 3.10
+  def foldLeft[A, B](as: List[A], z: B)(f: (B, A) => B): B = {
+    @scala.annotation.tailrec
+    def go(as: List[A], acc: B): B = {
+      as match {
+        case Nil => acc
+        case Cons(h, t) => go(t, f(acc, h))
+      }
+    }
+    go(as, z)
+  }
+
+  // Exercise 3.11
+  def sum3(is: List[Int]): Int =
+    foldLeft(is, 0)(_ + _)
+  def product3(ds: List[Double]): Double =
+    foldLeft(ds, 1.0)(_ * _)
+  def length2[A](as: List[A]): Int =
+    foldLeft(as, 0)((acc, _) => acc + 1)
 }
 
 object List extends ProvidedList with ListExercises
@@ -78,6 +115,7 @@ object Program extends App {
   println(s"x = $x")
 
   val three = List(1, 2, 3)
+  val threeD = List(1.0, 2.0, 3.0)
 
   def t[A](left: A, right: A): Unit = {
     if (left == right) {
@@ -95,4 +133,8 @@ object Program extends App {
   t(List.drop(three, 2), List(3))
   t(List.dropWhile(three)(_ < 3), List(3))
   t(List.init(three), List(1, 2))
+  t(List.length(three), 3)
+  t(List.sum3(three), 6)
+  t(List.product3(threeD), 6)
+  t(List.length2(three), 3)
 }
