@@ -114,6 +114,24 @@ trait ListExercises {
   }
   def reverse2[A](as: List[A]): List[A] =
     foldLeft(as, Nil: List[A])((acc, elem) => Cons(elem, acc))
+
+  // Exercise 3.14
+  def append2[A](a1: List[A], a2: List[A]): List[A] =
+    List.foldRight(a1, a2)((elem, acc) => Cons(elem, acc))
+
+  // Exercise 3.15
+  def flatten[A](as: List[List[A]]): List[A] = {
+    @scala.annotation.tailrec
+    def go(as: List[List[A]], acc: List[A]): List[A] =
+      as match {
+        case Cons(h, t) => go(t, List.append(h, acc))
+        case Nil => acc
+      }
+    go(as, Nil)
+  }
+  // actually, let's try using a fold...
+  def flatten2[A](as: List[List[A]]): List[A] =
+    foldLeft(as, Nil: List[A])((acc, elem) => List.append(elem, acc))
 }
 
 object List extends ProvidedList with ListExercises
@@ -153,4 +171,7 @@ object Program extends App {
   t(List.length2(three), 3)
   t(List.reverse(three), List(3, 2, 1))
   t(List.reverse2(three), List(3, 2, 1))
+  t(List.append2(three, three), List(1, 2, 3, 1, 2, 3))
+  t(List.flatten(List(three, three, three)), List(1, 2, 3, 1, 2, 3, 1, 2, 3))
+  t(List.flatten2(List(three, three, three)), List(1, 2, 3, 1, 2, 3, 1, 2, 3))
 }
