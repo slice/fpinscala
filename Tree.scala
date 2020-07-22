@@ -37,16 +37,12 @@ object Tree extends App {
       case Branch(l, r) => g(fold(l)(f)(g), fold(r)(f)(g))
       case Leaf(a) => f(a)
     }
-
   def size2[A](t: Tree[A]): Int =
     fold(t)(_ => 1)(1 + _ + _)
-
   def maximum2(t: Tree[Int]): Int =
     fold(t)(identity)(_ max _)
-
   def depth2[A](t: Tree[A]): Int =
     fold(t)(_ => 0)((l, r) => (1 + l).max(1 + r))
-
   def map2[A, B](t: Tree[A])(f: A => B): Tree[B] =
     fold(t)(a => Leaf(f(a)): Tree[B])(Branch(_, _))
 
