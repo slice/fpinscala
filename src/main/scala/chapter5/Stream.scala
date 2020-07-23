@@ -40,6 +40,32 @@ sealed trait Stream[+A] {
       case Cons(h, t) if p(h()) => Stream.cons(h(), t().takeWhile(p))
       case _ => Empty
     }
+
+  def exists(p: A => Boolean): Boolean = this match {
+    case Cons(h, t) => p(h()) || t().exists(p)
+    case _ => false
+  }
+
+  def foldRight[B](z: => B)(f: (A, => B) => B): B =
+    this match {
+      case Cons(h, t) => f(h(), t().foldRight(z)(f))
+      case _ => z
+    }
+
+  def exists2(p: A => Boolean): Boolean =
+    foldRight(false)((a, b) => p(a) || b)
+
+  // Exercise 5.4
+  def forAll(p: A => Boolean): Boolean =
+    foldRight(true)((a, b) => if (p(a)) b else false)
+
+  // Exercise 5.5
+  def takeWhile2(p: A => Boolean): Stream[A] =
+    foldRight(Empty: Stream[A])((a, b) => if (p(a)) Stream.cons(a, b) else Empty)
+
+  // Exercise 5.6
+  def headOption2: Option[A] =
+    foldRight(None: Option[A])((a, _) => Some(a))
 }
 
 case object Empty extends Stream[Nothing]
