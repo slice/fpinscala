@@ -1,3 +1,5 @@
+package zone.slice.fpinscala.chapter3
+
 sealed trait List[+A]
 case object Nil extends List[Nothing]
 case class Cons[+A](head: A, tail: List[A]) extends List[A]
@@ -212,55 +214,3 @@ trait ListExercises {
 }
 
 object List extends ProvidedList with ListExercises
-
-object Program extends App {
-  val x = List(1,2,3,4,5) match {
-    case Cons(x, Cons(2, Cons(4, _))) => x
-    case Nil => 42
-    case Cons(x, Cons(y, Cons(3, Cons(4, _)))) => x + y case Cons(h, t) => h + List.sum(t)
-    case _ => 101
-  }
-
-  println(s"x = $x")
-
-  val three = List(1, 2, 3)
-  val threeD = List(1.0, 2.0, 3.0)
-
-  def t[A](left: A, right: A): Unit = {
-    if (left == right) {
-      return
-    }
-
-    import scala.io.{AnsiColor => Color}
-    val message = s"failed: expected $right, got $left"
-    Console.err.println(s"${Color.RED}$message${Color.RESET}")
-    System.exit(1)
-  }
-
-  t(List.tail(three), List(2, 3))
-  t(List.setHead(three, 2), List(2, 2, 3))
-  t(List.drop(three, 1), List.tail(three))
-  t(List.drop(three, 2), List(3))
-  t(List.dropWhile(three)(_ < 3), List(3))
-  t(List.init(three), List(1, 2))
-  t(List.length(three), 3)
-  t(List.sum3(three), 6)
-  t(List.product3(threeD), 6)
-  t(List.length2(three), 3)
-  t(List.reverse(three), List(3, 2, 1))
-  t(List.reverse2(three), List(3, 2, 1))
-  t(List.append2(three, three), List(1, 2, 3, 1, 2, 3))
-  t(List.flatten(List(three, three, three)), List(1, 2, 3, 1, 2, 3, 1, 2, 3))
-  t(List.flatten2(List(three, three, three)), List(1, 2, 3, 1, 2, 3, 1, 2, 3))
-  t(List.add1(three), List(2, 3, 4))
-  t(List.doublesToString(threeD), List("1.0", "2.0", "3.0"))
-  t(List.map(three)(_ + 1), List(2, 3, 4))
-  t(List.map2(three)(_ + 1), List(2, 3, 4))
-  t(List.filter(three)(_ == 2), List(2))
-  t(List.flatMap(three)(n => List(n, n)), List(1, 1, 2, 2, 3, 3))
-  t(List.filter2(three)(_ == 2), List(2))
-  t(List.addCorresponding(three, three), List(2, 4, 6))
-  t(List.zipWith(three, three)(_ + _), List.addCorresponding(three, three))
-  t(List.hasSubsequence(three, List(2, 3)), true)
-  t(List.hasSubsequence(List(1, 2, 3, 4, 5, 6, 5, 4), List(5, 6, 5)), true)
-}

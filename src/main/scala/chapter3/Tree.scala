@@ -1,8 +1,10 @@
+package zone.slice.fpinscala.chapter3
+
 sealed trait Tree[+A]
 case class Leaf[A](value: A) extends Tree[A]
 case class Branch[A](left: Tree[A], right: Tree[A]) extends Tree[A]
 
-object Tree extends App {
+object Tree {
   // Exercise 3.25
   def size[A](t: Tree[A]): Int =
     t match {
@@ -45,19 +47,4 @@ object Tree extends App {
     fold(t)(_ => 0)((l, r) => (1 + l).max(1 + r))
   def map2[A, B](t: Tree[A])(f: A => B): Tree[B] =
     fold(t)(a => Leaf(f(a)): Tree[B])(Branch(_, _))
-
-  val tree = Branch(Leaf(1), Branch(Leaf(2), Leaf(3)))
-  val deepTree =
-    Branch(Branch(Leaf(1), Leaf(2)), Branch(Branch(Leaf(3), Leaf(4)), Leaf(5)))
-
-  assert(size(tree) == 5)
-  assert(maximum(tree) == 3)
-  assert(depth(tree) == 2)
-  assert(depth(deepTree) == 3)
-  assert(map(tree)(_.toString) == Branch(Leaf("1"), Branch(Leaf("2"), Leaf("3"))))
-  assert(map2(tree)(_.toString) == Branch(Leaf("1"), Branch(Leaf("2"), Leaf("3"))))
-  assert(size2(tree) == size(tree))
-  assert(maximum2(tree) == maximum(tree))
-  assert(depth2(tree) == depth(tree))
-  assert(depth2(deepTree) == depth(deepTree))
 }

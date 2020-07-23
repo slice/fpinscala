@@ -1,3 +1,5 @@
+package zone.slice.fpinscala.chapter4
+
 trait Option[+A] {
   // Exercise 4.1
   def map[B](f: A => B): Option[B] =
@@ -59,7 +61,7 @@ object Option {
 case class Some[+A](get: A) extends Option[A]
 case object None extends Option[Nothing]
 
-object Program extends App {
+object OptionAux {
   def mean(xs: Seq[Double]): Option[Double] =
     if (xs.isEmpty) None
     else Some(xs.sum / xs.length)
@@ -80,13 +82,4 @@ object Program extends App {
   def Try[A](a: => A): Option[A] =
     try Some(a)
     catch { case e: Exception => None }
-
-  val somes = List(Some(5), Some(2), Some(3))
-  val partial = List(None, Some(1), None)
-  assert(Option.sequence(somes) == Some(List(5, 2, 3)))
-  assert(Option.sequence(partial) == None)
-  assert(Option.sequence2(somes) == Option.sequence(somes))
-  assert(Option.sequence2(partial) == Option.sequence(partial))
-  assert(Option.traverse(List("1", "2", "no"))(n => Try(n.toInt)) == None)
-  assert(Option.traverse(List("1", "2"))(n => Try(n.toInt)) == Some(List(1, 2)))
 }

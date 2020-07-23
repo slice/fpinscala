@@ -1,4 +1,6 @@
-object Currying extends App {
+package zone.slice.fpinscala.chapter2
+
+object Currying {
   // Exercise 2.3
   def curry[A, B, C](f: (A, B) => C): A => B => C =
     a => b => f(a, b)

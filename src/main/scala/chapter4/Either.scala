@@ -1,3 +1,5 @@
+package zone.slice.fpinscala.chapter4
+
 sealed trait Either[+E, +A] {
   // Exercise 4.6
   def map[B](f: A => B): Either[E, B] =
@@ -20,7 +22,9 @@ sealed trait Either[+E, +A] {
       aa <- this
       bb <- b
     } yield f(aa, bb)
+}
 
+object Either {
   // Exercise 4.7
   def sequence[E, A](es: List[Either[E, A]]): Either[E, List[A]] =
     traverse(es)(identity)

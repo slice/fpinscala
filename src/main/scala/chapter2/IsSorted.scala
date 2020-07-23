@@ -1,4 +1,6 @@
-object IsSorted extends App {
+package zone.slice.fpinscala.chapter2
+
+object IsSorted {
   // Exercise 2.2
   def isSorted[A](as: List[A])(ordered: (A, A) => Boolean): Boolean = {
     @annotation.tailrec
@@ -8,7 +10,4 @@ object IsSorted extends App {
       else go(i + 1)
     go(0)
   }
-
-  println(isSorted(List(1, 2, 3, 4, 5))(_ < _))
-  println(isSorted(List(5, 4, 3, 1, 2))(_ < _))
 }
