@@ -3,8 +3,8 @@ package zone.slice.fpinscala
 class Chapter4Suite extends munit.FunSuite {
   import chapter4._
 
-  val five = Some(5)
-  val six = Some(6)
+  val five              = Some(5)
+  val six               = Some(6)
   val none: Option[Int] = None
 
   test("4.1") {
@@ -34,7 +34,7 @@ class Chapter4Suite extends munit.FunSuite {
     assertEquals(Option.sequence(partial), None)
   }
 
-  val somes = List(Some(5), Some(2), Some(3))
+  val somes   = List(Some(5), Some(2), Some(3))
   val partial = List(None, Some(1), None)
 
   test("4.5") {
@@ -43,25 +43,34 @@ class Chapter4Suite extends munit.FunSuite {
     assertEquals(Option.sequence2(somes), Option.sequence(somes))
     assertEquals(Option.sequence2(partial), Option.sequence(partial))
     assertEquals(Option.traverse(List("1", "2", "no"))(n => Try(n.toInt)), None)
-    assertEquals(Option.traverse(List("1", "2"))(n => Try(n.toInt)), Some(List(1, 2)))
+    assertEquals(
+      Option.traverse(List("1", "2"))(n => Try(n.toInt)),
+      Some(List(1, 2))
+    )
   }
 
   val success: Either[String, Int] = Right(5)
-  val error: Either[String, Int] = Left("failed!")
+  val error: Either[String, Int]   = Left("failed!")
 
   test("4.6") {
     assertEquals(success.map(_ + 1), Right(6))
     assertEquals(success.flatMap(five => error), error)
-    assertEquals(for {
-      five <- success
-      someInt <- error
-    } yield someInt, error)
+    assertEquals(
+      for {
+        five    <- success
+        someInt <- error
+      } yield someInt,
+      error
+    )
     assertEquals(error.orElse(success), success)
     assertEquals(success.map2(error)(_ + _), error)
   }
 
   test("4.7") {
     assertEquals(Either.sequence(List(success, success)), Right(List(5, 5)))
-    assertEquals(Either.sequence(List(success, success, error)), Left("failed!"))
+    assertEquals(
+      Either.sequence(List(success, success, error)),
+      Left("failed!")
+    )
   }
 }

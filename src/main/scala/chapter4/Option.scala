@@ -5,14 +5,14 @@ trait Option[+A] {
   def map[B](f: A => B): Option[B] =
     this match {
       case Some(a) => Some(f(a))
-      case None => None
+      case None    => None
     }
   def flatMap[B](f: A => Option[B]): Option[B] =
     this.map(f).getOrElse(None)
   def getOrElse[B >: A](default: => B): B =
     this match {
       case Some(a) => a
-      case None => default
+      case None    => default
     }
   def orElse[B >: A](ob: => Option[B]): Option[B] =
     this.map(Some(_)).getOrElse(ob)
@@ -29,7 +29,7 @@ object Option {
   def map2[A, B, C](a: Option[A], b: Option[B])(f: (A, B) => C): Option[C] =
     (a, b) match {
       case (Some(av), Some(bv)) => Some(f(av, bv))
-      case _ => None
+      case _                    => None
     }
   // maybe using tuples is cheating here?
   def map2B[A, B, C](a: Option[A], b: Option[B])(f: (A, B) => C): Option[C] =
@@ -44,14 +44,14 @@ object Option {
   // Exercise 4.4
   def sequence[A](a: List[Option[A]]): Option[List[A]] =
     a match {
-      case Nil => Some(Nil)
+      case Nil    => Some(Nil)
       case h :: t => h.flatMap(v => sequence(t).map(v :: _))
     }
 
   // Exercise 4.5
   def traverse[A, B](a: List[A])(f: A => Option[B]): Option[List[B]] =
     a match {
-      case Nil => Some(Nil)
+      case Nil    => Some(Nil)
       case h :: t => f(h).flatMap(v => traverse(t)(f).map(v :: _))
     }
   def sequence2[A](a: List[Option[A]]): Option[List[A]] =
@@ -59,7 +59,7 @@ object Option {
 }
 
 case class Some[+A](get: A) extends Option[A]
-case object None extends Option[Nothing]
+case object None            extends Option[Nothing]
 
 object OptionAux {
   def mean(xs: Seq[Double]): Option[Double] =
@@ -72,8 +72,11 @@ object OptionAux {
 
   def insuranceRateQuote(age: Int, speedingTickets: Int): Double = 10.0
 
-  def parseInsuranceRateQuote(age: String, speedingTickets: String): Option[Double] = {
-    val optAge: Option[Int] = Try { age.toInt }
+  def parseInsuranceRateQuote(
+      age: String,
+      speedingTickets: String
+  ): Option[Double] = {
+    val optAge: Option[Int]     = Try { age.toInt }
     val optTickets: Option[Int] = Try { speedingTickets.toInt }
 
     Option.map2(optAge, optTickets)(insuranceRateQuote)

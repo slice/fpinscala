@@ -1,7 +1,10 @@
 .DS_Store
 
+.metals
 .bloop
 .bsp
+.ammonite
+project/metals.sbt
 
 *.class
 *.jar

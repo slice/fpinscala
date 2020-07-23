@@ -3,7 +3,7 @@ package zone.slice.fpinscala
 class Chapter3Suite extends munit.FunSuite {
   import chapter3._
 
-  val three = List(1, 2, 3)
+  val three        = List(1, 2, 3)
   val threeDoubles = List(1.0, 2.0, 3.0)
 
   test("3.2") {
@@ -38,7 +38,7 @@ class Chapter3Suite extends munit.FunSuite {
   test("3.11") {
     assertEquals(List.sum3(three), 6)
     assertEquals(List.product3(threeDoubles), 6.0)
-    assertEquals(List.length2(three), 3) 
+    assertEquals(List.length2(three), 3)
   }
 
   test("3.12") {
@@ -51,8 +51,14 @@ class Chapter3Suite extends munit.FunSuite {
   }
 
   test("3.15") {
-    assertEquals(List.flatten(List(three, three, three)), List(1, 2, 3, 1, 2, 3, 1, 2, 3))
-    assertEquals(List.flatten2(List(three, three, three)), List(1, 2, 3, 1, 2, 3, 1, 2, 3))    
+    assertEquals(
+      List.flatten(List(three, three, three)),
+      List(1, 2, 3, 1, 2, 3, 1, 2, 3)
+    )
+    assertEquals(
+      List.flatten2(List(three, three, three)),
+      List(1, 2, 3, 1, 2, 3, 1, 2, 3)
+    )
   }
 
   test("3.16") {
@@ -69,7 +75,7 @@ class Chapter3Suite extends munit.FunSuite {
   }
 
   test("3.19") {
-    assertEquals(List.filter(three)(_ == 2), List(2))    
+    assertEquals(List.filter(three)(_ == 2), List(2))
   }
 
   test("3.20") {
@@ -85,12 +91,18 @@ class Chapter3Suite extends munit.FunSuite {
   }
 
   test("3.23") {
-    assertEquals(List.zipWith(three, three)(_ + _), List.addCorresponding(three, three))
+    assertEquals(
+      List.zipWith(three, three)(_ + _),
+      List.addCorresponding(three, three)
+    )
   }
 
   test("3.24") {
     assertEquals(List.hasSubsequence(three, List(2, 3)), true)
-    assertEquals(List.hasSubsequence(List(1, 2, 3, 4, 5, 6, 5, 4), List(5, 6, 5)), true)
+    assertEquals(
+      List.hasSubsequence(List(1, 2, 3, 4, 5, 6, 5, 4), List(5, 6, 5)),
+      true
+    )
   }
 
   val tree = Branch(Leaf(1), Branch(Leaf(2), Leaf(3)))
@@ -111,11 +123,17 @@ class Chapter3Suite extends munit.FunSuite {
   }
 
   test("3.28") {
-    assertEquals(Tree.map(tree)(_.toString), Branch(Leaf("1"), Branch(Leaf("2"), Leaf("3"))))
+    assertEquals(
+      Tree.map(tree)(_.toString),
+      Branch(Leaf("1"), Branch(Leaf("2"), Leaf("3")))
+    )
   }
 
   test("3.29") {
-    assertEquals(Tree.map2(tree)(_.toString), Branch(Leaf("1"), Branch(Leaf("2"), Leaf("3"))))
+    assertEquals(
+      Tree.map2(tree)(_.toString),
+      Branch(Leaf("1"), Branch(Leaf("2"), Leaf("3")))
+    )
     assertEquals(Tree.size2(tree), Tree.size(tree))
     assertEquals(Tree.maximum2(tree), Tree.maximum(tree))
     assertEquals(Tree.depth2(tree), Tree.depth(tree))

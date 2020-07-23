@@ -1,17 +1,18 @@
 package zone.slice.fpinscala.chapter5
 
 sealed trait Stream[+A] {
-  def headOption: Option[A] = this match {
-    case Empty => None
-    case Cons(h, t) => Some(h())
-  }
+  def headOption: Option[A] =
+    this match {
+      case Empty      => None
+      case Cons(h, t) => Some(h())
+    }
 
   // Exercise 5.1
   def toList: List[A] = {
     @scala.annotation.tailrec
     def go(s: Stream[A], acc: List[A]): List[A] = {
       s match {
-        case Empty => acc
+        case Empty      => acc
         case Cons(h, t) => go(t(), h() :: acc)
       }
     }
@@ -23,33 +24,36 @@ sealed trait Stream[+A] {
   // Exercise 5.2
   def take(n: Int): Stream[A] =
     if (n == 0) Empty
-    else this match {
-      case Empty => Empty
-      case Cons(h, t) => Stream.cons(h(), t().take(n - 1))
-    }
+    else
+      this match {
+        case Empty      => Empty
+        case Cons(h, t) => Stream.cons(h(), t().take(n - 1))
+      }
   def drop(n: Int): Stream[A] =
     if (n == 0) this
-    else this match {
-      case Empty => Empty
-      case Cons(_, t) => t().drop(n - 1)
-    }
+    else
+      this match {
+        case Empty      => Empty
+        case Cons(_, t) => t().drop(n - 1)
+      }
 
   // Exercise 5.3
   def takeWhile(p: A => Boolean): Stream[A] =
     this match {
       case Cons(h, t) if p(h()) => Stream.cons(h(), t().takeWhile(p))
-      case _ => Empty
+      case _                    => Empty
     }
 
-  def exists(p: A => Boolean): Boolean = this match {
-    case Cons(h, t) => p(h()) || t().exists(p)
-    case _ => false
-  }
+  def exists(p: A => Boolean): Boolean =
+    this match {
+      case Cons(h, t) => p(h()) || t().exists(p)
+      case _          => false
+    }
 
   def foldRight[B](z: => B)(f: (A, => B) => B): B =
     this match {
       case Cons(h, t) => f(h(), t().foldRight(z)(f))
-      case _ => z
+      case _          => z
     }
 
   def exists2(p: A => Boolean): Boolean =
@@ -61,7 +65,9 @@ sealed trait Stream[+A] {
 
   // Exercise 5.5
   def takeWhile2(p: A => Boolean): Stream[A] =
-    foldRight(Empty: Stream[A])((a, b) => if (p(a)) Stream.cons(a, b) else Empty)
+    foldRight(Empty: Stream[A])((a, b) =>
+      if (p(a)) Stream.cons(a, b) else Empty
+    )
 
   // Exercise 5.6
   def headOption2: Option[A] =

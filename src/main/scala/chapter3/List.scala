@@ -1,20 +1,22 @@
 package zone.slice.fpinscala.chapter3
 
 sealed trait List[+A]
-case object Nil extends List[Nothing]
+case object Nil                             extends List[Nothing]
 case class Cons[+A](head: A, tail: List[A]) extends List[A]
 
 trait ProvidedList {
-  def sum(ints: List[Int]): Int = ints match {
-    case Nil => 0
-    case Cons(x, xs) => x + sum(xs)
-  }
+  def sum(ints: List[Int]): Int =
+    ints match {
+      case Nil         => 0
+      case Cons(x, xs) => x + sum(xs)
+    }
 
-  def product(ds: List[Double]): Double = ds match {
-    case Nil => 1.0
-    case Cons(0.0, _) => 0.0
-    case Cons(x, xs) => x * product(xs)
-  }
+  def product(ds: List[Double]): Double =
+    ds match {
+      case Nil          => 1.0
+      case Cons(0.0, _) => 0.0
+      case Cons(x, xs)  => x * product(xs)
+    }
 
   def apply[A](as: A*): List[A] =
     if (as.isEmpty) Nil
@@ -23,14 +25,14 @@ trait ProvidedList {
   // p. 36
   def append[A](a1: List[A], a2: List[A]): List[A] =
     a1 match {
-      case Nil => a2
+      case Nil        => a2
       case Cons(h, t) => Cons(h, append(t, a2))
     }
 
   // p. 39
   def foldRight[A, B](as: List[A], z: B)(f: (A, B) => B): B =
     as match {
-      case Nil => z
+      case Nil         => z
       case Cons(x, xs) => f(x, foldRight(xs, z)(f))
     }
 
@@ -46,14 +48,14 @@ trait ListExercises {
   def tail[A](as: List[A]): List[A] =
     as match {
       case Cons(_, as) => as
-      case Nil => ???
+      case Nil         => ???
     }
 
   // Exercise 3.3
   def setHead[A](as: List[A], a: A): List[A] =
     as match {
       case Cons(_, as) => Cons(a, as)
-      case Nil => List(a)
+      case Nil         => List(a)
     }
 
   // Exercise 3.4
@@ -65,7 +67,7 @@ trait ListExercises {
   def dropWhile[A](as: List[A])(f: A => Boolean): List[A] =
     as match {
       case Cons(h, t) if f(h) => dropWhile(t)(f)
-      case as => as
+      case as                 => as
     }
 
   // Exercise 3.6
@@ -73,8 +75,8 @@ trait ListExercises {
     def go(acc: List[A], cur: List[A]): List[A] =
       cur match {
         case Cons(h, t: Cons[A]) => go(List.append(acc, List(h)), t)
-        case Cons(h, Nil) => acc
-        case Nil => ???
+        case Cons(h, Nil)        => acc
+        case Nil                 => ???
       }
     go(Nil, as)
   }
@@ -88,7 +90,7 @@ trait ListExercises {
     @scala.annotation.tailrec
     def go(as: List[A], acc: B): B = {
       as match {
-        case Nil => acc
+        case Nil        => acc
         case Cons(h, t) => go(t, f(acc, h))
       }
     }
@@ -108,7 +110,7 @@ trait ListExercises {
     @scala.annotation.tailrec
     def go(as: List[A], acc: List[A]): List[A] = {
       as match {
-        case Nil => acc
+        case Nil        => acc
         case Cons(h, t) => go(t, Cons(h, acc))
       }
     }
@@ -127,7 +129,7 @@ trait ListExercises {
     def go(as: List[List[A]], acc: List[A]): List[A] =
       as match {
         case Cons(h, t) => go(t, List.append(h, acc))
-        case Nil => acc
+        case Nil        => acc
       }
     go(as, Nil)
   }
@@ -141,7 +143,9 @@ trait ListExercises {
 
   // Exercise 3.17
   def doublesToString(ds: List[Double]): List[String] =
-    List.foldRight(ds, Nil: List[String])((elem, acc) => Cons(elem.toString, acc))
+    List.foldRight(ds, Nil: List[String])((elem, acc) =>
+      Cons(elem.toString, acc)
+    )
 
   // Exercise 3.18
   def map[A, B](as: List[A])(f: A => B): List[B] =
@@ -150,7 +154,7 @@ trait ListExercises {
   def map2[A, B](as: List[A])(f: A => B): List[B] =
     as match {
       case Cons(h, t) => Cons(f(h), map(t)(f))
-      case Nil => Nil
+      case Nil        => Nil
     }
 
   // Exercise 3.19
@@ -166,7 +170,7 @@ trait ListExercises {
   def flatMap[A, B](as: List[A])(f: A => List[B]): List[B] =
     as match {
       case Cons(h, t) => List.append(f(h), flatMap(t)(f))
-      case Nil => Nil
+      case Nil        => Nil
     }
 
   // Exercise 3.21
@@ -177,7 +181,7 @@ trait ListExercises {
   def addCorresponding(is1: List[Int], is2: List[Int]): List[Int] =
     (is1, is2) match {
       case (Cons(h, t), Cons(h2, t2)) => Cons(h + h2, addCorresponding(t, t2))
-      case _ => Nil
+      case _                          => Nil
     }
 
   // Exercise 3.23
