@@ -140,6 +140,47 @@ object Par {
           else submit(es) { f(es)(cb) }
         }
       }
+
+  // Exercise 7.11
+  def choiceN[A](n: Par[Int])(choices: List[Par[A]]): Par[A] =
+    es =>
+      Future { cb =>
+        n(es) { index =>
+          choices(index)(es)(cb(_))
+        }
+      }
+  def choice2[A](p: Par[Boolean])(t: Par[A], f: Par[A]): Par[A] =
+    choiceN(map(p)(if (_) 0 else 1))(List(t, f))
+
+  // Exercise 7.12
+  def choiceMap[K, V](key: Par[K])(choices: Map[K, Par[V]]): Par[V] =
+    es =>
+      Future { cb =>
+        key(es) { k =>
+          choices(k)(es)(cb(_))
+        }
+      }
+  // basically the same as `choiceN`... `flatMap` time...?
+
+  // Exercise 7.13
+  def flatMap[A, B](pa: Par[A])(f: A => Par[B]): Par[B] =
+    es =>
+      Future { cb =>
+        pa(es) { value =>
+          f(value)(es)(cb(_))
+        }
+      }
+
+  // Exercise 7.14
+  def flatten[A](papa: Par[Par[A]]): Par[A] =
+    es =>
+      Future { cb =>
+        papa(es) { pa =>
+          pa(es)(cb(_))
+        }
+      }
+  def flatMap2[A, B](pa: Par[A])(f: A => Par[B]): Par[B] =
+    flatten(map(pa)(f))
 }
 
 object ParUse {

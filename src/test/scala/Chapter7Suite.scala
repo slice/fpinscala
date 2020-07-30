@@ -42,4 +42,36 @@ class Chapter7Suite extends munit.FunSuite {
     val pa = Par.parFilter(List.range(1, 6))(_ > 3)
     assertEquals(Par.run(service)(pa), List(4, 5))
   }
+
+  test("7.11") {
+    val pars    = List.range(1, 6).map(Par.pure(_))
+    val decider = Par.pure(2)
+    assertEquals(Par.run(service)(Par.choiceN(decider)(pars)), 3)
+    val t = Par.pure(true)
+    val f = Par.pure(false)
+    assertEquals(Par.run(service)(Par.choice(t)(t, f)), true)
+  }
+
+  test("7.12") {
+    val map =
+      List("hey", "there", "friend").map(x => x -> Par.pure(s"$x!")).toMap
+    val chooser = Par.pure("there")
+    assertEquals(Par.run(service)(Par.choiceMap(chooser)(map)), "there!")
+  }
+
+  test("7.13") {
+    val par = Par.flatMap(Par.pure(2))(x => Par.pure(x + 2))
+    assertEquals(Par.run(service)(par), 4)
+  }
+
+  test("7.14") {
+    val par = Par.pure(Par.pure(3))
+    assertEquals(Par.run(service)(Par.flatten(par)), 3)
+    val one    = Par.pure(1)
+    val mapped = Par.flatMap2(one)(x => Par.pure(x + 1))
+    assertEquals(
+      Par.run(service)(mapped),
+      2
+    )
+  }
 }
