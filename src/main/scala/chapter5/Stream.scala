@@ -117,6 +117,18 @@ sealed trait Stream[+A] {
         None
     }
 
+  // this'll be useful LATER...
+  // (or not.)
+  def zip[B](b: Stream[B]): Stream[(A, B)] =
+    zipAll(b)
+      .takeWhile {
+        case (_: Some[A], _: Some[B]) => true
+        case _                        => false
+      }
+      .map {
+        case (Some(a), Some(b)) => (a, b)
+      }
+
   // Exercise 5.14
   def startsWith[A](s: Stream[A]): Boolean =
     Stream
