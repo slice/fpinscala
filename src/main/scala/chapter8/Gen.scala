@@ -1,13 +1,14 @@
 package zone.slice.fpinscala
 package chapter8
 
-import chapter6.{State, RNG}
+import chapter6.{State, RNG, SimpleRNG}
 
 // *eyeroll*
 object Types {
   type FailedCase   = String
   type SuccessCount = Int
   type TestCases    = Int
+  type MaxSize      = Int
 }
 
 import Types._
@@ -22,11 +23,14 @@ case object Passed extends Result {
 case class Failed(failure: FailedCase, successes: SuccessCount) extends Result {
   var failed = true
 }
+case object Proved extends Result {
+  val failed = false
+}
 
 /**
   * A generator of arbitrary `A` values.
   */
-case class Gen[A](sample: State[RNG, A]) {
+case class Gen[+A](sample: State[RNG, A]) {
   // oops, took a look at solutions and it turns out we can just use state.. lol
   def map[B](f: A => B): Gen[B] =
     Gen(sample.map(f))
@@ -48,9 +52,23 @@ case class Gen[A](sample: State[RNG, A]) {
     Gen.listOfN(size, this)
   def listOfN(size: Gen[Int]): Gen[List[A]] =
     size.flatMap(n => Gen.listOfN(n, this))
+
+  // Exercise 8.10
+  /**
+    * Converts this `Gen` to an unsized `SGen`.
+    */
+  def unsized: SGen[A] = SGen(_ => this)
 }
 
-case class Prop(run: (TestCases, RNG) => Result) {
+case class SGen[+A](forSize: Int => Gen[A]) {
+  // Exercise 8.11
+  def map[B](f: A => B): SGen[B] =
+    SGen(forSize(_) map f)
+  def flatMap[B](f: A => SGen[B]): SGen[B] =
+    SGen(n => forSize(n) flatMap { f(_).forSize(n) })
+}
+
+case class Prop(run: (MaxSize, TestCases, RNG) => Result) {
   // Exercise 8.3
   // def &&(p: Prop): Prop = {
   //   val result = this.check && p.check
@@ -61,37 +79,52 @@ case class Prop(run: (TestCases, RNG) => Result) {
 
   // Exercise 8.9
   def &&(p: Prop): Prop =
-    Prop { (n, rng) =>
-      run(n, rng) match {
+    Prop { (max, n, rng) =>
+      run(max, n, rng) match {
         // immediately fail (short circuiting)
-        case f: Failed       => f
-        case ps: Passed.type => p.run(n, rng)
+        case f: Failed => f
+        case _         => p.run(max, n, rng)
       }
     }
 
   def ||(p: Prop): Prop =
-    Prop { (n, rng) =>
-      run(n, rng) match {
-        case f: Failed => p.run(n, rng)
+    Prop { (max, n, rng) =>
+      run(max, n, rng) match {
+        case f: Failed => p.run(max, n, rng)
         // immediately pass (short circuiting)
-        case ps: Passed.type =>
-          ps
+        case o => o
       }
     }
 }
 
-object Gen {
-  def listOf[A](a: Gen[A]): Gen[List[A]] = {
-    // a bit arbitrary, but what else? hmm. :THINKING:
-    choose(1, 101).flatMap(n => { a.listOfN(Gen.pure(n)) })
+object Prop {
+  // dangerous side effects!!! >:O
+  def check(
+      prop: Prop,
+      maxSize: Int = 100,
+      testCases: Int = 100,
+      rng: RNG = SimpleRNG(System.currentTimeMillis)
+  ): Result = {
+    val result = prop.run(maxSize, testCases, rng)
+    result match {
+      case Failed(msg, n) => println(s"! Failed after $n passed tests: $msg")
+      case Passed         => println(s"+ OK, passed $testCases tests.")
+      case Proved         => println(s"+ OK, property proved.")
+    }
+    result
   }
+
+  def check(p: => Boolean): Prop =
+    Prop { (_, _, _) =>
+      if (p) Proved else Failed("()", 0)
+    }
 
   /**
     * Build a `Prop` from a `Gen` by asserting that all possibly generated
     * values satisify a condition.
     */
   def forAll[A](as: Gen[A])(f: A => Boolean): Prop =
-    Prop { (n, rng) =>
+    Prop { (max, n, rng) =>
       randomLazyList(as)(rng)
         .zip(LazyList.from(0))
         .take(n)
@@ -107,13 +140,38 @@ object Gen {
         .getOrElse(Passed)
     }
 
+  def forAll[A](g: SGen[A])(f: A => Boolean): Prop =
+    forAll(n => g.forSize(n))(f)
+
+  def forAll[A](g: Int => Gen[A])(f: A => Boolean): Prop =
+    Prop { (max, n, rng) =>
+      // "For each size, generate this many random cases."
+      val casesPerSize = (n + (max - 1)) / max
+      // "Make one property per size, but no more than `n` properties."
+      val props: LazyList[Prop] =
+        LazyList.from(0).take((n min max) + 1).map(i => forAll(g(i))(f))
+      // "Combine them all into one property."
+      val prop: Prop =
+        props
+          .map(p =>
+            Prop { (max, _, rng) =>
+              p.run(max, casesPerSize, rng)
+            }
+          )
+          .toList
+          .reduce(_ && _)
+      prop.run(max, n, rng)
+    }
+
   private def randomLazyList[A](g: Gen[A])(rng: RNG): LazyList[A] =
     LazyList.unfold(rng)(rng => Some(g.sample.run(rng)))
   private def buildFailureMessage[A](s: A, e: Exception): String =
     s"test case: $s\n" +
       s"generated an exception: ${e.getMessage}\n" +
       s"stack trace:\n ${e.getStackTrace.mkString("\n")}"
+}
 
+object Gen {
   // numbers are cool, right?
   def int: Gen[Int] =
     Gen(State(RNG.int))
@@ -146,11 +204,24 @@ object Gen {
   def pure[A](a: => A): Gen[A] =
     Gen(State.unit(a)) // i don't like calling this `unit` so
   def boolean: Gen[Boolean] =
-    choose(0, 2).map(_ % 2 == 0) // bit bad, but eh.
+    choose(0, 2).map(_ == 1) // bit bad, but eh.
   def listOfN[A](n: Int, a: Gen[A]): Gen[List[A]] =
     Gen(State.sequence(List.fill(n)(a.sample)))
 
   // Exercise 8.7
   def union[A](g1: Gen[A], g2: Gen[A]): Gen[A] =
     boolean.flatMap(if (_) g1 else g2)
+
+  // def listOf[A](a: Gen[A]): Gen[List[A]] = {
+  //   // a bit arbitrary, but what else? hmm. :THINKING:
+  //   choose(1, 101).flatMap(n => { a.listOfN(Gen.pure(n)) })
+  // }
+
+  // Exercise 8.12
+  def listOf[A](g: Gen[A]): SGen[List[A]] =
+    SGen(g.listOfN(_))
+
+  // Exercise 8.13
+  def listOf1[A](g: Gen[A]): SGen[List[A]] =
+    SGen(n => g.listOfN(1 max n))
 }

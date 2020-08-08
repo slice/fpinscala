@@ -48,17 +48,64 @@ class Chapter8Suite extends munit.FunSuite {
     assertEquals(result == 1 || result == 2, true)
   }
 
-  test("works") {
-    val listOfInts = Gen.listOf(Gen.int)
-    val prop       = Gen.forAll(listOfInts)(l => l.reverse.reverse == l)
-    assertEquals(prop.run(1000, rng).passed, true)
+  def check(p: Prop): Result =
+    Prop.check(p, 100, 100, rng)
+  def assertPasses(p: Prop): Unit =
+    assertEquals(check(p).passed, true)
+  def assertFails(p: Prop): Unit =
+    assertEquals(check(p).failed, true)
 
-    val fails  = Gen.forAll(Gen.int)(_ > 0)
-    val result = fails.run(1000, rng)
-    assertEquals(result.failed, true)
+  test("8.9") {
+    import Prop.forAll
+    import Gen._
 
-    val alsoPasses = Gen.forAll(listOfInts)(l => l.sum == l.foldLeft(0)(_ + _))
-    assertEquals((prop && alsoPasses).run(1000, rng).passed, true)
-    assertEquals((prop && fails).run(1000, rng).failed, true)
+    // `list.reverse.reverse` is the same as `list`
+    val reverseTwiceIdentity = forAll(listOf(int))(l => l.reverse.reverse == l)
+    assertPasses(reverseTwiceIdentity)
+
+    // all integers are positive (hey, not true!)
+    val allIntsPositive = forAll(int)(_ > 0)
+    assertFails(allIntsPositive)
+
+    // `list.sum` is the same as `list.foldLeft(0)(_ + _)`
+    val sumProp = forAll(listOf(int))(l => l.sum == l.foldLeft(0)(_ + _))
+    assertPasses(reverseTwiceIdentity && sumProp)
+    assertFails(reverseTwiceIdentity && allIntsPositive)
+
+    // all elements in a list (of at least size 1) of ints within [-10, 11) are
+    // smaller than the maximum
+    val maxProp = forAll(listOf1(choose(-10, 11))) { ns =>
+      val max = ns.max
+      !ns.exists(_ > max)
+    }
+    assertPasses(maxProp)
+  }
+
+  def isSorted(ints: List[Int]) = {
+    if (ints.size == 1) true // O_O.
+    else {
+      (ints, ints.tail).zipped.map(_ <= _).forall(identity)
+    }
+  }
+
+  // Exercise 8.14
+  test("8.14") {
+    import Prop.forAll
+    import Gen._
+
+    val sortedWorks = forAll(listOf1(int))(ints => isSorted(ints.sorted))
+    assertEquals(check(sortedWorks).passed, true)
+  }
+
+  test("laws") {
+    import chapter7._
+    import java.util.concurrent.{ExecutorService, Executors}
+    val es: ExecutorService = Executors.newCachedThreadPool()
+
+    val in   = Par.map(Par.pure(1))(_ + 1)
+    val out  = Par.pure(2)
+    val prop = Prop.check(Par.run(es)(in) == Par.run(es)(out))
+
+    assertEquals(check(prop).passed, true)
   }
 }
