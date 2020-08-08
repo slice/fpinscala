@@ -1,6 +1,7 @@
 package zone.slice.fpinscala
 package chapter8
 
+import chapter5.Stream
 import chapter6.{State, RNG, SimpleRNG}
 
 // *eyeroll*
@@ -48,6 +49,10 @@ case class Gen[+A](sample: State[RNG, A]) {
   //   (b, rng3)
   // })
 
+  // ~_~
+  def map2[B, C](g: Gen[B])(f: (A, B) => C): Gen[C] =
+    Gen(sample.map2(g.sample)(f))
+
   def listOfN(size: Int): Gen[List[A]] =
     Gen.listOfN(size, this)
   def listOfN(size: Gen[Int]): Gen[List[A]] =
@@ -58,6 +63,72 @@ case class Gen[+A](sample: State[RNG, A]) {
     * Converts this `Gen` to an unsized `SGen`.
     */
   def unsized: SGen[A] = SGen(_ => this)
+}
+
+object Gen {
+  // numbers are cool, right?
+  def int: Gen[Int] =
+    Gen(State(RNG.int))
+  def posInt: Gen[Int] =
+    int.map(_.abs)
+
+  // Exercise 8.4
+  def choose(start: Int, stopExclusive: Int): Gen[Int] =
+    Gen(State { rng =>
+      // basic math time?? thanks soren
+      val (i, rng2) = rng.nextInt
+      val range     = stopExclusive - start
+      val offset    = ((i % range) + range) % range
+      val result    = start + offset
+      (result, rng2)
+    })
+
+  // ... i am, once again, implementing `traverse`. ＼（´Ｏ｀）／
+  def traverse[A, B](as: List[Gen[A]])(f: Gen[A] => Gen[B]): Gen[List[A]] =
+    as match {
+      case Nil    => pure(Nil)
+      case h :: t => h.flatMap(gen => traverse(t)(f).map(gen :: _))
+    }
+  def sequence[A](as: List[Gen[A]]): Gen[List[A]] =
+    traverse(as)(identity)
+  // okay, well, turns out we didn't even need these. but i'm keeping 'em
+  // anyways because it forced me to implement `flatMap` >:c
+
+  // Exercise 8.5
+  def pure[A](a: => A): Gen[A] =
+    Gen(State.unit(a)) // i don't like calling this `unit` so
+  def boolean: Gen[Boolean] =
+    choose(0, 2).map(_ == 1) // bit bad, but eh.
+  def listOfN[A](n: Int, a: Gen[A]): Gen[List[A]] =
+    Gen(State.sequence(List.fill(n)(a.sample)))
+
+  // Exercise 8.7
+  def union[A](g1: Gen[A], g2: Gen[A]): Gen[A] =
+    boolean.flatMap(if (_) g1 else g2)
+
+  // Exercise 8.8
+  def weighted[A](g1: (Gen[A], Double), g2: (Gen[A], Double)): Gen[A] = {
+    // #stolen #code #from: https://github.com/fpinscala/fpinscala/blob/master/answers/src/main/scala/fpinscala/testing/Gen.scala#L228
+    val (g1g, g1c) = g1
+    val (g2g, g2c) = g2
+    val g1t        = g1c.abs / (g1c.abs + g2c.abs)
+    Gen(
+      State(RNG.double).flatMap(d => if (d > g1t) g1g.sample else g2g.sample)
+    )
+  }
+
+  // def listOf[A](a: Gen[A]): Gen[List[A]] = {
+  //   // a bit arbitrary, but what else? hmm. :THINKING:
+  //   choose(1, 101).flatMap(n => { a.listOfN(Gen.pure(n)) })
+  // }
+
+  // Exercise 8.12
+  def listOf[A](g: Gen[A]): SGen[List[A]] =
+    SGen(g.listOfN(_))
+
+  // Exercise 8.13
+  def listOf1[A](g: Gen[A]): SGen[List[A]] =
+    SGen(n => g.listOfN(1 max n))
 }
 
 case class SGen[+A](forSize: Int => Gen[A]) {
@@ -125,8 +196,8 @@ object Prop {
     */
   def forAll[A](as: Gen[A])(f: A => Boolean): Prop =
     Prop { (max, n, rng) =>
-      randomLazyList(as)(rng)
-        .zip(LazyList.from(0))
+      randomStream(as)(rng)
+        .zip(Stream.from(0))
         .take(n)
         .map {
           case (a, i) =>
@@ -140,16 +211,28 @@ object Prop {
         .getOrElse(Passed)
     }
 
+  private def randomStream[A](g: Gen[A])(rng: RNG): Stream[A] =
+    Stream.unfold(rng)(rng => Some(g.sample.run(rng)))
+  private def buildFailureMessage[A](s: A, e: Exception): String =
+    s"test case: $s\n" +
+      s"generated an exception: ${e.getMessage}\n" +
+      s"stack trace:\n ${e.getStackTrace.mkString("\n")}"
+
   def forAll[A](g: SGen[A])(f: A => Boolean): Prop =
     forAll(n => g.forSize(n))(f)
 
+  // BUG: due to how this works, once we find a size that fails the property,
+  //      it'll always report "after 0 passed tests", because we create a new
+  //      property for each size. because the property for that size will fail
+  //      the property, it'll always happen on the first generation. fix this
+  //      somehow?
   def forAll[A](g: Int => Gen[A])(f: A => Boolean): Prop =
     Prop { (max, n, rng) =>
       // "For each size, generate this many random cases."
       val casesPerSize = (n + (max - 1)) / max
       // "Make one property per size, but no more than `n` properties."
-      val props: LazyList[Prop] =
-        LazyList.from(0).take((n min max) + 1).map(i => forAll(g(i))(f))
+      val props: Stream[Prop] =
+        Stream.from(0).take((n min max) + 1).map(i => forAll(g(i))(f))
       // "Combine them all into one property."
       val prop: Prop =
         props
@@ -163,65 +246,5 @@ object Prop {
       prop.run(max, n, rng)
     }
 
-  private def randomLazyList[A](g: Gen[A])(rng: RNG): LazyList[A] =
-    LazyList.unfold(rng)(rng => Some(g.sample.run(rng)))
-  private def buildFailureMessage[A](s: A, e: Exception): String =
-    s"test case: $s\n" +
-      s"generated an exception: ${e.getMessage}\n" +
-      s"stack trace:\n ${e.getStackTrace.mkString("\n")}"
-}
 
-object Gen {
-  // numbers are cool, right?
-  def int: Gen[Int] =
-    Gen(State(RNG.int))
-  def posInt: Gen[Int] =
-    int.map(_.abs)
-
-  // Exercise 8.4
-  def choose(start: Int, stopExclusive: Int): Gen[Int] =
-    Gen(State { rng =>
-      // basic math time?? thanks soren
-      val (i, rng2) = rng.nextInt
-      val range     = stopExclusive - start
-      val offset    = ((i % range) + range) % range
-      val result    = start + offset
-      (result, rng2)
-    })
-
-  // ... i am, once again, implementing `traverse`. ＼（´Ｏ｀）／
-  def traverse[A, B](as: List[Gen[A]])(f: Gen[A] => Gen[B]): Gen[List[A]] =
-    as match {
-      case Nil    => pure(Nil)
-      case h :: t => h.flatMap(gen => traverse(t)(f).map(gen :: _))
-    }
-  def sequence[A](as: List[Gen[A]]): Gen[List[A]] =
-    traverse(as)(identity)
-  // okay, well, turns out we didn't even need these. but i'm keeping 'em
-  // anyways because it forced me to implement `flatMap` >:c
-
-  // Exercise 8.5
-  def pure[A](a: => A): Gen[A] =
-    Gen(State.unit(a)) // i don't like calling this `unit` so
-  def boolean: Gen[Boolean] =
-    choose(0, 2).map(_ == 1) // bit bad, but eh.
-  def listOfN[A](n: Int, a: Gen[A]): Gen[List[A]] =
-    Gen(State.sequence(List.fill(n)(a.sample)))
-
-  // Exercise 8.7
-  def union[A](g1: Gen[A], g2: Gen[A]): Gen[A] =
-    boolean.flatMap(if (_) g1 else g2)
-
-  // def listOf[A](a: Gen[A]): Gen[List[A]] = {
-  //   // a bit arbitrary, but what else? hmm. :THINKING:
-  //   choose(1, 101).flatMap(n => { a.listOfN(Gen.pure(n)) })
-  // }
-
-  // Exercise 8.12
-  def listOf[A](g: Gen[A]): SGen[List[A]] =
-    SGen(g.listOfN(_))
-
-  // Exercise 8.13
-  def listOf1[A](g: Gen[A]): SGen[List[A]] =
-    SGen(n => g.listOfN(1 max n))
 }

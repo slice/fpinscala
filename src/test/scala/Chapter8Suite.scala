@@ -17,7 +17,8 @@ class Chapter8Suite extends munit.FunSuite {
   //   assertEquals((goodProp && badProp).check, false)
   // }
 
-  val rng = SimpleRNG(5)
+  // val rng = SimpleRNG(5)
+  val rng = SimpleRNG(System.currentTimeMillis())
 
   def run[A](gen: Gen[A]): A =
     gen.sample.run(rng)._1
@@ -79,6 +80,9 @@ class Chapter8Suite extends munit.FunSuite {
       !ns.exists(_ > max)
     }
     assertPasses(maxProp)
+
+    val nonsense = forAll(listOf1(int))(_.size < 10)
+    assertFails(nonsense)
   }
 
   def isSorted(ints: List[Int]) = {
