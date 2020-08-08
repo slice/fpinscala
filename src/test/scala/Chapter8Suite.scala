@@ -72,8 +72,8 @@ class Chapter8Suite extends munit.FunSuite {
     assertPasses(reverseTwiceIdentity && sumProp)
     assertFails(reverseTwiceIdentity && allIntsPositive)
 
-    // all elements in a list (of at least size 1) of ints within [-10, 11) are
-    // smaller than the maximum
+    // no element in a list (of at least size 1) of ints within [-10, 11) are
+    // larger than the maximum int of the list
     val maxProp = forAll(listOf1(choose(-10, 11))) { ns =>
       val max = ns.max
       !ns.exists(_ > max)
