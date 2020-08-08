@@ -109,7 +109,27 @@ class Chapter8Suite extends munit.FunSuite {
     val in   = Par.map(Par.pure(1))(_ + 1)
     val out  = Par.pure(2)
     val prop = Prop.check(Par.run(es)(in) == Par.run(es)(out))
+    assertPasses(prop)
 
-    assertEquals(check(prop).passed, true)
+    // using `forAllPar`...
+
+    val easierProp = Prop.checkPar {
+      // no method syntax WHY WHY
+      Par.map(Par.map(Par.pure(1))(_ + 1))(_ == 2)
+    }
+    assertPasses(easierProp)
   }
+
+  // Exercise 8.17
+  test("8.17") {
+    import chapter7._
+    Prop.forAllPar(Gen.elaborateParInt) { parInt =>
+      Prop.parEqual(Par.fork(parInt), parInt)
+    }
+  }
+
+  // Exercise 8.18
+  //
+  // `list.takeWhile(???)` should evaluate to a list that satisfies
+  // `list.hasSubsequence` and `list.startsWith`.
 }

@@ -3,6 +3,9 @@ package chapter8
 
 import chapter5.Stream
 import chapter6.{State, RNG, SimpleRNG}
+import chapter7.Par
+import Par.Par
+import zone.slice.fpinscala.chapter7.ParUse
 
 // *eyeroll*
 object Types {
@@ -26,6 +29,10 @@ case class Failed(failure: FailedCase, successes: SuccessCount) extends Result {
 }
 case object Proved extends Result {
   val failed = false
+}
+
+object ** {
+  def unapply[A, B](p: (A, B)) = Some(p)
 }
 
 /**
@@ -52,6 +59,9 @@ case class Gen[+A](sample: State[RNG, A]) {
   // ~_~
   def map2[B, C](g: Gen[B])(f: (A, B) => C): Gen[C] =
     Gen(sample.map2(g.sample)(f))
+
+  def **[B](g: Gen[B]): Gen[(A, B)] =
+    map2(g)((_, _))
 
   def listOfN(size: Int): Gen[List[A]] =
     Gen.listOfN(size, this)
@@ -129,6 +139,12 @@ object Gen {
   // Exercise 8.13
   def listOf1[A](g: Gen[A]): SGen[List[A]] =
     SGen(n => g.listOfN(1 max n))
+
+  // Exercise 8.16
+  def elaborateParInt: Gen[Par[Int]] =
+    choose(-1000, 1001).listOfN(choose(50, 101)).map { list =>
+      ParUse.parSum(list.toVector)
+    }
 }
 
 case class SGen[+A](forSize: Int => Gen[A]) {
@@ -246,5 +262,18 @@ object Prop {
       prop.run(max, n, rng)
     }
 
+  import java.util.concurrent.Executors // O_O!!
+  private val executors = Gen.weighted(
+    // 75% funny fixed thread pool executor
+    Gen.choose(1, 4).map(Executors.newFixedThreadPool) -> .75,
+    // 25% even more funny unbounded thread pool executor
+    Gen.pure(Executors.newCachedThreadPool) -> .25
+  )
 
+  def parEqual[A](p1: Par[A], p2: Par[A]): Par[Boolean] =
+    Par.map2(p1, p2)(_ == _)
+  def forAllPar[A](g: Gen[A])(f: A => Par[Boolean]): Prop =
+    forAll(executors ** g) { case s ** a => Par.run(s)(f(a)) }
+  def checkPar(p: Par[Boolean]): Prop =
+    forAllPar(Gen.pure(()))(_ => p)
 }
