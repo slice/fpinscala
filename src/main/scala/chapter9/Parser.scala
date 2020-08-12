@@ -62,8 +62,12 @@ trait Parsers[ParseError, Parser[+_]] { self =>
     product(p, p2) map (f.tupled)
   def flatMap[A, B](p: Parser[A])(f: A => Parser[B]): Parser[B]
   // Exercise 9.7
-  def map2UsingFlatMap[A, B, C](p: Parser[A], p2: => Parser[B])(f: (A, B) => C): Parser[C] =
-    flatMap(p)(a => flatMap(p2)(b => pure(f(a, b)))) // boooooring! just `product` then `map`
+  def map2UsingFlatMap[A, B, C](p: Parser[A], p2: => Parser[B])(
+      f: (A, B) => C
+  ): Parser[C] =
+    flatMap(p)(a =>
+      flatMap(p2)(b => pure(f(a, b)))
+    ) // boooooring! just `product` then `map`
 
   // Exercise 9.6
   def specifiedA: Parser[List[String]] =
@@ -116,11 +120,11 @@ trait Parsers[ParseError, Parser[+_]] { self =>
 
 sealed trait JSON
 object JSON {
-  case object JNull extends JSON
-  case class JNumber(get: Double) extends JSON
-  case class JString(get: String) extends JSON
-  case class JBool(get: Boolean) extends JSON
-  case class JArray(get: IndexedSeq[JSON]) extends JSON
+  case object JNull                          extends JSON
+  case class JNumber(get: Double)            extends JSON
+  case class JString(get: String)            extends JSON
+  case class JBool(get: Boolean)             extends JSON
+  case class JArray(get: IndexedSeq[JSON])   extends JSON
   case class JObject(get: Map[String, JSON]) extends JSON
 
   // Exercise 9.9
@@ -128,19 +132,23 @@ object JSON {
     import P._
 
     def digit: Parser[String] = "[0-9]".r
-    def number: Parser[Int] = digit.many1.slice.map(_.toInt)
+    def number: Parser[Int]   = digit.many1.slice.map(_.toInt)
     def quote: Parser[String] = "\"" // lol
-    def any: Parser[String] = ".".r
+    def any: Parser[String]   = ".".r
 
     def jnull: Parser[JNull.type] = "null".as(JNull)
-    def jnumber: Parser[JNumber] = number.map(JNumber(_))
-    def jstring: Parser[JString] = (quote *> any.many.slice <* quote).map(JString(_))
+    def jnumber: Parser[JNumber]  = number.map(JNumber(_))
+    def jstring: Parser[JString] =
+      (quote *> any.many.slice <* quote).map(JString(_))
     def jbool: Parser[JBool] = ("true" | "false").map(s => JBool(s == "true"))
-    def jarray: Parser[JArray] = ("[" *> json.many <* "]").map(os => JArray(os.toVector))
+    def jarray: Parser[JArray] =
+      ("[" *> json.many <* "]").map(os => JArray(os.toVector))
     def jobject: Parser[JObject] =
       ("{" *> (jstring ** (":" *> json)).many <* "}")
-        .map(_.map { case (key, json) => key.get -> json }.toMap).map(JObject(_))
-    def json: Parser[JSON] = jnull | jnumber | jstring | jbool | jarray | jobject
+        .map(_.map { case (key, json) => key.get -> json }.toMap)
+        .map(JObject(_))
+    def json: Parser[JSON] =
+      jnull | jnumber | jstring | jbool | jarray | jobject
 
     json
   }
